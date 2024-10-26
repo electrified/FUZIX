@@ -1139,8 +1139,8 @@ copyback:
 
 void netdev_init(void)
 {
-	ipa = ntohl(0xC0A80001);
-	iga = ntohl(0xC0A800FE);
+	ipa = ntohl(0x0A000002);
+	iga = ntohl(0x0A000001);
 	igm = ntohl(0xFFFFFF00);
 
 	w5x00_setup();	
