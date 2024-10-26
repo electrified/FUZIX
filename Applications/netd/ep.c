@@ -17,18 +17,18 @@ int main( int argc, char *argv[] ){
     int fd;
     char buf[1024];
     int x;
-    int port = 7;
+    int port = 12345;
 
-    if (argc < 2)
-    {
-        fprintf(stderr, "Usage: %s <ip address> [port]\n", argv[0]);
-        exit(1);
-    }
+    // if (argc < 2)
+    // {
+    //     fprintf(stderr, "Usage: %s <ip address> [port]\n", argv[0]);
+    //     exit(1);
+    // }
 
-    if (argc == 3)
-    {
-        port = atoi(argv[2]);
-    }
+    // if (argc == 3)
+    // {
+    //     port = atoi(argv[2]);
+    // }
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if( fd < 0 ){
@@ -38,7 +38,7 @@ int main( int argc, char *argv[] ){
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    inet_pton( AF_INET, argv[1], &addr.sin_addr.s_addr );
+    inet_pton( AF_INET, "10.0.0.1", &addr.sin_addr.s_addr );
     
     if( connect( fd, (struct sockaddr *) &addr, sizeof(addr)) < 0 ){
 	perror("connect");
