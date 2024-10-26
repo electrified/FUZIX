@@ -110,18 +110,28 @@ static int run_sockfunc(sockfunc_t func, uint8_t n, uint8_t flags)
 	 *	do something like a partial read that the next caller can progress
 	 */
 	while(func()) {
+		kprintf("sf\n");
 		if (udata.u_error && (flags & O_NDELAY))
 			return -1;
+		kprintf("sf2\n");
 		irq = di();
+		kprintf("sf3\n");
 		if (!sock_wake[n]) {
+			kprintf("sf4\n");
 			if (psleep_flags(sock_wake + n, flags) == -1) {
+				kprintf("sf5\n");
 				irqrestore(irq);
 				return -1;
 			}
-		} else
+		} else {
+			kprintf("sf6\n");
 			sock_wake[n] = 0;
+		}
+		kprintf("sf7\n");
 		irqrestore(irq);
+		kprintf("sf8\n");
 	}
+	kprintf("sf ew\n");
 	/* We made progress but there may be more progress left to make, so poke anyone else */
 	sock_wake[n] = 1;
 	wakeup(sock_wake + n);
@@ -129,6 +139,7 @@ static int run_sockfunc(sockfunc_t func, uint8_t n, uint8_t flags)
 		ssig(udata.u_ptab, udata.u_net.sig);
 		udata.u_net.sig = 0;
 	}
+	kprintf("sfd\n");
 	return udata.u_done;
 }
 
@@ -204,7 +215,9 @@ arg_t _netcall(void)
 	}
 	/* Run states of the network machine. It will return > 0 for a sleep and
 	   0 when done. We handle the rules for I/O interruption ourselves */
+	kprintf("netcall\n");
 	run_sockfunc(net_syscall, udata.u_net.sock, flags);
+	kprintf("nca\n");
 	/* If it asked us to SIGPIPE do so */
 	if (udata.u_error == 0) {
 		/* The syscall makes a new socket. Allocate it an inode and
@@ -238,6 +251,7 @@ arg_t _netcall(void)
 		}
 		return udata.u_retval;
 	}
+	kprintf("nce\n");
 	return -1;
 }
 
@@ -254,6 +268,7 @@ arg_t _netcall(void)
 int sock_read(inoptr ino, uint8_t flags)
 {
 	udata.u_net.sock = IN2SOCK(ino);
+	kprintf("sr\n");
 	return run_sockfunc(net_read, udata.u_net.sock, flags);
 }
 
