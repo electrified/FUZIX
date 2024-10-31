@@ -852,7 +852,8 @@ int netproto_begin_connect(struct socket *s)
 		return 1;
 	} else {
 		/* UDP/RAW - note have to do our own filtering for 'connect' */
-		memcpy(&s->src_addr, &udata.u_net.addrbuf, sizeof(struct ksockaddr));
+		// EB: Remove this fix as is potentially breaking things by triggering filtering?
+		// memcpy(&s->src_addr, &udata.u_net.addrbuf, sizeof(struct ksockaddr));
 		kprintf("connect\n");
 		print_ipv4(udata.u_net.addrbuf.sa.sin.sin_addr.s_addr);
 		print_ipv4(s->src_addr.sa.sin.sin_addr.s_addr);
@@ -932,6 +933,11 @@ int netproto_read(struct socket *s)
 				// kprintf("u\n");
 				w5x00_dequeue(i, ptr, 2, &udata.u_net.addrbuf.sa.sin.sin_addr);
 				ptr +=2;
+
+				/* we copy the destination address from the socket into addrbuf earlier, then 
+				compare it to the source address on the socket */
+
+				/* if we have a source address, it must match the destination address put in addrbuf */
 				if (s->src_addr.sa.sin.sin_addr.s_addr && s->src_addr.sa.sin.sin_addr.s_addr !=
 					udata.u_net.addrbuf.sa.sin.sin_addr.s_addr) {
 						// filtered = 1;
