@@ -824,11 +824,16 @@ int netproto_accept_complete(struct socket *s)
 }
 
 void print_ipv4(uint32_t ip) {
-    kprintf("%u.%u.%u.%u\n",
-           (ip >> 24) & 0xFF,
-           (ip >> 16) & 0xFF,
-           (ip >> 8) & 0xFF,
-           ip & 0xFF);
+    union {
+        uint32_t ip;
+        uint8_t bytes[4];
+    } ipv4;
+
+    ipv4.ip = ip;
+
+    // Print the IP address in dot-decimal format
+    kprintf("%u.%u.%u.%u\n", ipv4.bytes[0], ipv4.bytes[1], ipv4.bytes[2], ipv4.bytes[3]);
+
 }
 
 
@@ -1147,7 +1152,9 @@ void netdev_init(void)
 
 #ifdef VERSIONR
 	if (w5x00_readcb(VERSIONR) == VERSION_ID) {
+		uint32_t ip = 0x0A000001;  // 10.0.0.1
 		kputs("Wiznet "HWNAME" detected.\n");
+		print_ipv4(ip);
 		wiznet_present = 1;
 	}
 #else
