@@ -112,9 +112,10 @@ int net_syscall(void)
 			return 0;
 		if (s->s_state < SS_BOUND)
 			break;
-		/* This will put the address into u_net.n_addr for us */
+		/* This will put the address into u_net.addrbuf for us */
 		r = netproto_read(s);
 		udata.u_retval = udata.u_done;
+		kprintf("sc rf %d\n", r);
 		return r;
 	case 8:		/* shutdown */
 		if (udata.u_argn1 > 2)

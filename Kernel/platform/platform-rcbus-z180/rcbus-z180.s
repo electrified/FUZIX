@@ -31,7 +31,7 @@
 ; -----------------------------------------------------------------------------
         .area _BUFFERS
 _bufpool:
-        .ds (BUFSIZE * 3) ; adjust NBUFS in config.h in line with this
+        .ds (BUFSIZE * 2) ; adjust NBUFS in config.h in line with this
 
 ; -----------------------------------------------------------------------------
 ; Initialisation code

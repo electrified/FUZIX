@@ -215,9 +215,9 @@ arg_t _netcall(void)
 	}
 	/* Run states of the network machine. It will return > 0 for a sleep and
 	   0 when done. We handle the rules for I/O interruption ourselves */
-	kprintf("netcall\n");
+	// kprintf("pnc\n");
 	run_sockfunc(net_syscall, udata.u_net.sock, flags);
-	kprintf("nca\n");
+	// kprintf("nca\n");
 	/* If it asked us to SIGPIPE do so */
 	if (udata.u_error == 0) {
 		/* The syscall makes a new socket. Allocate it an inode and
@@ -240,15 +240,17 @@ arg_t _netcall(void)
 				s = ugeti((void *) ap[1]);
 				/* Replace it with the actual size */
 				uputi(udata.u_net.addrlen, (void *) ap[1]);
-				/* Copy the buffer, oe less if truncated by size */
+				/* Copy the buffer, or less if truncated by size */
 				if (s > udata.u_net.addrlen)
 					s = udata.u_net.addrlen;
-				if (uput(&udata.u_net.addrbuf, (void *) *ap, s) != s) {
+				if (uput(&udata.u_net.addrbuf, (void *) *ap, s) < 0) {
+					// kprintf("s %d al %d\n", s, udata.u_net.addrlen);
 					udata.u_error = EFAULT;
 					return -1;
 				}
 			}
 		}
+		kprintf("nc rv %d \n", udata.u_retval);
 		return udata.u_retval;
 	}
 	kprintf("nce\n");

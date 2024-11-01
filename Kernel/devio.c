@@ -588,7 +588,7 @@ int psleep_flags(void *p, uint_fast8_t flags)
 	// kprintf("psf\n");
 	if (flags & O_NDELAY) {
 		udata.u_error = EAGAIN;
-		kprintf("psf1\n");
+		// kprintf("psfer\n");
 		return -1;
 	}
 	kprintf("psf1\n");
