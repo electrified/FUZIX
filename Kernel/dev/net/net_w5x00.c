@@ -855,8 +855,7 @@ int netproto_begin_connect(struct socket *s)
 		return 1;
 	} else {
 		/* UDP/RAW - note have to do our own filtering for 'connect' */
-		// EB: Remove this fix as is potentially breaking things by triggering filtering?
-		// memcpy(&s->src_addr, &udata.u_net.addrbuf, sizeof(struct ksockaddr));
+		memcpy(&s->src_addr, &udata.u_net.addrbuf, sizeof(struct ksockaddr));
 		kprintf("connect\n");
 		// print_ipv4(udata.u_net.addrbuf.sa.sin.sin_addr.s_addr);
 		// print_ipv4(s->src_addr.sa.sin.sin_addr.s_addr);
