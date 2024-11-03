@@ -94,6 +94,16 @@ int net_syscall(void)
 			break;
 		if (!is_datagram(s) || udata.u_net.args[5] == 0)
 			return netproto_write(s, &s->dst_addr);
+
+		// memcpy(&udata.u_net.addrbuf.sa.sin, (struct sockaddr *) udata.u_net.args[5], udata.u_net.args[6]);
+
+		// addr = (struct sockaddr_in *) udata.u_net.args[5];
+		// ip = (unsigned char *)&addr->sin_addr.s_addr;
+		// kprintf("P %d\n", ntohs(addr->sin_port)); 
+		// kprintf("I %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
+
+		// kprintf("P %d\n", udata.u_net.addrbuf.sa.sin.sin_port);
+		// kprintf("I %d\n", udata.u_net.addrbuf.sa.sin.sin_addr.s_addr);
 		r = netproto_write(s, &udata.u_net.addrbuf);
 		udata.u_retval = udata.u_done;
 		return r;
@@ -105,6 +115,7 @@ int net_syscall(void)
 		/* This will put the address into u_net.n_addr for us */
 		r = netproto_read(s);
 		udata.u_retval = udata.u_done;
+		kprintf("sc rf %d\n", r);
 		return r;
 	case 8:		/* shutdown */
 		if (udata.u_argn1 > 2)
@@ -152,18 +163,19 @@ int net_read(void)
 {
 	int r;
 	register struct socket *s = sockets + udata.u_net.sock;
+	kprintf("nr1\n");
 	if (s->s_error) {
 		udata.u_error = s->s_error;
 		s->s_error = 0;
+		kprintf("nr err\n");
 		return 0;
 	}
+	// kprintf("2\n");
 	/* Q: datagram read in SS_BOUND valid but stream not ? TODO */
-	if (s->s_state < SS_CONNECTED) {
-		udata.u_error = EINVAL;
-		return 0;
-	}
+	kprintf("nr\n");
 	r = netproto_read(s);
 	udata.u_retval = udata.u_done;
+	kprintf("nrd %d\n", r);
 	return r;
 }
 

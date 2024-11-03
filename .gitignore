@@ -1,3 +1,6 @@
+*
+!/**/
+!*.*
 # SDCC stuff
 *.lnk
 *.lst
@@ -23,3 +26,25 @@ size.report
 *.elf
 bin
 *.debug
+*.#
+*.%
+*.@
+*.^
+*.s
+*.img
+fshbuild_*
+Library/libs/*.asm
+*.bin
+*.ihx
+*.lib
+*.symtmp*
+Applications/ue/ue.ansi
+Applications/ue/ue.fuzix
+Applications/games/fortune.dat
+Applications/games/sok.levels
+Kernel/font/font8x8_exp2.c
+Kernel/platform/platform-rcbus-z180/boot-romwbw.tmp
+Kernel/platform/platform-rcbus-z180/fuzix.romwbw
+Kernel/platform/platform-zrc/fuzix.tmpmap
+Kernel/platform-rcbus-z180/boot-romwbw.tmp
+Kernel/platform-rcbus-z180/fuzix.romwbw

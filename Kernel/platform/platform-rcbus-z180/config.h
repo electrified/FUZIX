@@ -52,7 +52,7 @@
 #define BOOTDEVICENAMES "hd#"
 
 #define CONFIG_DYNAMIC_BUFPOOL /* we expand bufpool to overwrite the _DISCARD segment at boot */
-#define NBUFS    4        /* Number of block buffers, keep in line with space reserved in rcbus-z180.s */
+#define NBUFS    2        /* Number of block buffers, keep in line with space reserved in rcbus-z180.s */
 #define NMOUNTS	 4	  /* Number of mounts at a time */
 
 /* Hardware parameters : internal hardware at 0xC0-0xFF */

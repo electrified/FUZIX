@@ -208,6 +208,7 @@ static void spi_transaction_u(uint8_t ctrl, uint16_t off, uint8_t *out,
 static void spi_transaction(uint8_t ctrl, uint16_t off,
 	uint8_t *out, uint16_t outlen, uint8_t *in, uint16_t inlen)
 {
+	// kprintf("st\n");
 	irqflags_t irq = di();
 	spi_select_port(2);
 	spi_send(off >> 8);
@@ -224,6 +225,7 @@ static void spi_transaction(uint8_t ctrl, uint16_t off,
 static void spi_transaction_u(uint8_t ctrl, uint16_t off,
 	uint8_t *out, uint16_t outlen, uint8_t *in, uint16_t inlen)
 {
+	// kprintf("stu\n");
 	irqflags_t irq = di();
 	spi_select_port(2);
 	spi_send(off >> 8);
@@ -241,6 +243,7 @@ static void spi_transaction_u(uint8_t ctrl, uint16_t off,
 uint8_t w5x00_readcb(uint16_t off)
 {
 	uint8_t r;
+	kprintf("rcb\n");
 	spi_transaction(1, off, NULL, 0, &r, 1);
 	return r;
 }
@@ -248,6 +251,7 @@ uint8_t w5x00_readcb(uint16_t off)
 uint8_t w5x00_readsb(uint8_t s, uint16_t off)
 {
 	uint8_t r;
+	// kprintf("rsb\n");
 	spi_transaction(SOCK2BANK_C(s)| 1, off, NULL, 0, &r, 1);
 	return r;
 }
@@ -255,6 +259,7 @@ uint8_t w5x00_readsb(uint8_t s, uint16_t off)
 uint16_t w5x00_readcw(uint16_t off)
 {
 	uint16_t r;
+	// kprintf("rcw\n");
 	spi_transaction(2, off, NULL, 0, &r, 2);
 	return ntohs(r);
 }
@@ -262,12 +267,14 @@ uint16_t w5x00_readcw(uint16_t off)
 uint16_t w5x00_readsw(uint8_t s, uint16_t off)
 {
 	uint16_t r;
+	// kprintf("rsw\n");
 	spi_transaction(SOCK2BANK_C(s)| 2, off, NULL, 0, &r, 2);
 	return ntohs(r);
 }
 
 void w5x00_bread(uint16_t bank, uint16_t off, void *pv, uint16_t n)
 {
+	// kprintf("br\n");
 	spi_transaction(bank, off, NULL, 0, pv, n);
 }
 

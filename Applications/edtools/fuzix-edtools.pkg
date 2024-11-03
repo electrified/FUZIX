@@ -1,0 +1,4 @@
+package  edtools
+
+f 0755 /usr/bin/httpd2  httpd2
+f 0755 /usr/bin/tftpd   tftpd

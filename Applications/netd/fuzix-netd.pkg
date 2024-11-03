@@ -4,6 +4,7 @@ f 0644 /etc/netrc	       netrc
 f 0644 /etc/resolv.conf        resolv.conf
 f 0755 /usr/bin/dig	       dig
 f 0755 /usr/bin/echoping       echoping
+f 0755 /usr/bin/ep             ep
 f 0755 /usr/bin/telnet	       telnet
 f 0755 /usr/bin/ping	       ping
 f 0755 /usr/bin/ntpdate        ntpdate

@@ -416,6 +416,7 @@ static void w5x00_dequeue_u(uint16_t i, uint16_t n, void *p)
 
 static void w5x00_cmd(uint8_t s, uint8_t v)
 {
+	// kprintf("wcmd\n");
 	w5x00_writesb(s, Sn_CR, v);
 	while(w5x00_readsb(s, Sn_CR));
 }
@@ -556,6 +557,9 @@ static void w5x00_event_s(uint8_t i)
 	register struct socket *s;
 	register uint16_t stat = w5x00_readsw(i, Sn_IR);	/* BE read of reg pair */
 
+	kprintf("sock %d slot %d event %x\n",
+		sn, i, stat);
+
 	/* We got a pending event for a dead socket as we killed it. Shoot it
 	   again to make sure it's dead */
 	if (sn == 0xFF) {
@@ -564,17 +568,18 @@ static void w5x00_event_s(uint8_t i)
 		w5x00_writecb(SIMR, irqmask);
 		return;
 	}
-//	kprintf("sock %d slot %d event %x\n",
-//		sn, i, stat);
+
 	s = sockets + sn;
 
 	if (stat & 0x1000) {
+		kprintf("ev: TC\n");
 		/* Transmit completed: window re-open. We can allow more
 		   data to flow from the user */
 		s->s_iflags &= ~SI_THROTTLE;
 		s->s_wake = 1;
 	}
 	if (stat & 0x800) {
+		kprintf("ev: to\n");
 		/* Timeout */
 		s->s_error = ETIMEDOUT;
 		w5x00_cmd(i, CLOSE);
@@ -583,16 +588,19 @@ static void w5x00_event_s(uint8_t i)
 		/* Fall through and let CLOSE state processing do the work */
 	}
 	if (stat & 0x400) {
+		kprintf("evrw\n");
 		/* Receive wake: Poke the user in case they are reading */
 		s->s_iflags |= SI_DATA;
 		s->s_wake = 1;
 	}
 	if (stat & 0x200) {
+		kprintf("eveof\n");
 		w5x00_eof(s);
 		/* When we fall through we'll see CLOSE state and do the
 		   actual shutting down if appropriate */
 	}
 	if (stat & 0x100) {
+		kprintf("ev: conn\n");
 		/* Connect: Move into connected state */
 		if (s->s_state == SS_CONNECTING) {
 			s->s_state = SS_CONNECTED;
@@ -602,6 +610,7 @@ static void w5x00_event_s(uint8_t i)
 	/* Clear interrupt sources down */
 	w5x00_writesb(i, Sn_IR, stat >> 8);
 
+	kprintf("stat %d \n", stat);
 	switch ((uint8_t)stat) {
 	case 0:		/* SOCK_CLOSED */
 		if (s->s_state != SS_CLOSED && s->s_state != SS_UNUSED) {
@@ -709,7 +718,9 @@ void w5x00_event(void)
 	register struct socket *s = sockets;
 
 	/* Polling cases */
+	// kprintf("evt\n");
 	irq = w5x00_readcb(SIR) & SIR_MASK;
+	// kprintf("irq %d\n", irq);
 	if (irq == 0)
 		return;
 
@@ -724,8 +735,11 @@ void w5x00_event(void)
 
 void w5x00_poll(void)
 {
-	if (irqmask)
+	// kprintf("poll\n");
+	if (irqmask) {
+		kprintf("pmask %d\n", irqmask);
 		w5x00_event();
+	}
 }
 
 struct socktype {
@@ -810,6 +824,20 @@ int netproto_accept_complete(struct socket *s)
 	return 0;
 }
 
+// void print_ipv4(uint32_t ip) {
+//     union {
+//         uint32_t ip;
+//         uint8_t bytes[4];
+//     } ipv4;
+
+//     ipv4.ip = ip;
+
+//     // Print the IP address in dot-decimal format
+//     kprintf("%u.%u.%u.%u\n", ipv4.bytes[0], ipv4.bytes[1], ipv4.bytes[2], ipv4.bytes[3]);
+
+// }
+
+
 /* Start connecting to a remote host. We can't implement the UDP case correctly
    in just hardware. */
 int netproto_begin_connect(struct socket *s)
@@ -826,6 +854,9 @@ int netproto_begin_connect(struct socket *s)
 	} else {
 		/* UDP/RAW - note have to do our own filtering for 'connect' */
 		memcpy(&s->src_addr, &udata.u_net.addrbuf, sizeof(struct ksockaddr));
+		kprintf("connect\n");
+		// print_ipv4(udata.u_net.addrbuf.sa.sin.sin_addr.s_addr);
+		// print_ipv4(s->src_addr.sa.sin.sin_addr.s_addr);
 		s->s_state = SS_CONNECTED;
 	}
 	return 0;
@@ -878,11 +909,17 @@ int netproto_read(struct socket *s)
 	do {
 		filtered = 0;
 		n = w5x00_readsw(i, Sn_RX_RSR);
+		kprintf("n %d\n", n);
 		if (n == 0) {
-			if (s->s_iflags & SI_EOF)
+			if (s->s_iflags & SI_EOF) {
+				kprintf("eof1\n");
 				return 0;
+			}
+
+			kprintf("r11\n");
 			return 1;
 		}
+		kprintf("n %d\n", n);
 		set_iflags(s, SI_DATA);
 
 		memcpy(&udata.u_net.addrbuf, &s->dst_addr, sizeof(struct ksockaddr));
@@ -890,6 +927,7 @@ int netproto_read(struct socket *s)
 		switch (s->s_type) {
 		case W5100_RAW:
 		case W5100_UDP:
+		// kprintf("np_r\n");
 		/* UDP comes with a header */
 			w5x00_dequeue(i, 4, &udata.u_net.addrbuf.sa.sin.sin_addr);
 			if (s->s_type == W5100_UDP) {
@@ -900,16 +938,21 @@ int netproto_read(struct socket *s)
 			}
 			w5x00_dequeue(i, 2, (uint8_t *) & n);	/* Actual packet size */
 			n = ntohs(n);	/* Big endian on device */
+			// kprintf("n %d\n", n);
 			/* Fall through */
 		case W5100_TCP:
 			/* Bytes to consume */
 			r = min(n, udata.u_count);
+			kprintf("r %d n %d \n", r, n);
 			if (!filtered) {
 				if (r == 0) {
 					/* Check for an EOF (covers post close cases too) */
-					if (s->s_iflags & SI_EOF)
+					if (s->s_iflags & SI_EOF) {
+						kprintf("eof2\n");
 						return 0;
+					}
 					/* Wait */
+					kprintf("r12\n");
 					return 1;
 				}
 				/* Now dequeue some bytes into udata.u_base */
@@ -924,8 +967,10 @@ int netproto_read(struct socket *s)
 			/* FIXME: figure out if SI_DATA should be cleared */
 			/* Now tell the device we ate the data */
 			w5x00_cmd(i, RECV);
+			kprintf("rcv\n");
 		}
 	} while(filtered);
+	kprintf("npx\n");
 	return 0;
 }
 
@@ -940,6 +985,7 @@ arg_t netproto_write(struct socket *s, struct ksockaddr *ka)
 
 	switch (s->s_type) {
 	case W5100_UDP:
+		// kprintf("np_write: W5100_UDP\n");
 		if (udata.u_count > 1472) {
 			udata.u_error = EMSGSIZE;
 			return 0;
@@ -952,6 +998,7 @@ arg_t netproto_write(struct socket *s, struct ksockaddr *ka)
 		if (room < udata.u_count)
 			return 0;
 		/* Already native endian */
+		// kprintf("npwip\n");
 		w5x00_bwrite(SOCK2BANK_C(i), Sn_DIPR0, &ka->sa.sin.sin_addr, 4);
 		w5x00_bwrite(SOCK2BANK_C(i), Sn_DPORT0, &ka->sa.sin.sin_port, 2);
 		/* Fall through */
@@ -965,6 +1012,7 @@ arg_t netproto_write(struct socket *s, struct ksockaddr *ka)
 		w5x00_queue_u(i, n, udata.u_base);
 		w5x00_writesw(i, Sn_TX_WR0, 
 			     w5x00_readsw(i, Sn_TX_WR0) + n);
+		// kprintf("npws\n");
 		w5x00_cmd(i, SEND);
 		break;
 	}
@@ -1025,6 +1073,7 @@ arg_t netproto_ioctl(struct socket *s, int op, char *ifr_u /* in user space */)
 	case SIOCGIFFLAGS:
 		ifr.ifr_flags = ifflags;
 #ifdef PSTATUS
+		kprintf("ps\n")
 		if (w5x00_readcb(PSTATUS) & 0x20)
 			ifr.ifr_flags |= IFF_LINKUP;
 #endif
@@ -1081,8 +1130,8 @@ copyback:
 
 void netdev_init(void)
 {
-	ipa = ntohl(0xC0A80001);
-	iga = ntohl(0xC0A800FE);
+	ipa = ntohl(0x0A000002);
+	iga = ntohl(0x0A000001);
 	igm = ntohl(0xFFFFFF00);
 
 	w5x00_setup();	
